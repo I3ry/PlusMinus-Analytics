@@ -1,1 +1,61 @@
-
+{
+  "players": [
+    {
+      "id": 1,
+      "name": "Jordan Mitchell",
+      "position": "SG",
+      "height": "6'4\"",
+      "team": "Chicago Wildcats",
+      "joined_date": "2024-01-15",
+      "skill_rating": 84,
+      "archetype": "3-Level Scorer"
+    }
+  ],
+  "shooting_sessions": [
+    {
+      "id": 1,
+      "player_id": 1,
+      "date": "2024-03-20",
+      "total_shots": 250,
+      "made_shots": 175,
+      "session_type": "Game Simulation"
+    }
+  ],
+  "shot_locations": [
+    {
+      "id": 1,
+      "player_id": 1,
+      "session_id": 1,
+      "x_coord": 25,
+      "y_coord": 15,
+      "made": true,
+      "shot_type": "3PT",
+      "distance_ft": 23
+    }
+  ],
+  "skill_ratings": [
+    {
+      "id": 1,
+      "player_id": 1,
+      "close_shot": 85,
+      "mid_range": 88,
+      "three_pt": 82,
+      "free_throw": 90,
+      "ball_handle": 84,
+      "passing": 79,
+      "defense": 76,
+      "rebounding": 72,
+      "athleticism": 86
+    }
+  ],
+  "training_plans": [
+    {
+      "id": 1,
+      "player_id": 1,
+      "focus_area": "3PT Shooting",
+      "exercises": ["Corner 3s", "Wing Pull-ups", "Transition 3s"],
+      "duration_weeks": 4,
+      "frequency": "3x/week"
+    }
+  ]
+}
