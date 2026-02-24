@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (raw files can be large; keep exports for Tableau)
+data/raw/*.json
+data/raw/*.csv
+data/cleaned/*.csv
+!data/exports/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tableau
+*.twbx
+*.hyper
+*.tde
+
+# Misc
+*.log
+.env
