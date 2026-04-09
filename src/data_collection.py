@@ -16,6 +16,16 @@ from nba_api.stats.endpoints import (
     shotchartdetail,
     playercareerstats,
     commonplayerinfo,
+    playergamelog,
+    playerestimatedmetrics,
+    playerdashboardbyyearoveryear,
+    playerdashboardbyshootingsplits,
+    leaguedashplayerstats,
+    leagueleaders,
+    leaguedashplayerbiostats,
+    leaguedashteamstats,
+    teamgamelog,
+    playercompare,
 )
 
 RAW_DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
@@ -147,6 +157,179 @@ def get_player_info(player_id: int) -> pd.DataFrame:
     _delay()
     response = commonplayerinfo.CommonPlayerInfo(player_id=player_id)
     return response.get_data_frames()[0]
+
+
+# ---------------------------------------------------------------------------
+# Game logs (game-by-game stats)
+# ---------------------------------------------------------------------------
+
+def get_player_game_log(
+    player_id: int, season: str, season_type: str = "Regular Season"
+) -> pd.DataFrame:
+    """Return game-by-game stats for a player in a given season."""
+    _delay()
+    response = playergamelog.PlayerGameLog(
+        player_id=player_id, season=season, season_type_all_star=season_type
+    )
+    return response.get_data_frames()[0]
+
+
+def get_player_game_logs_multi(
+    player_id: int, seasons: list[str], season_type: str = "Regular Season"
+) -> pd.DataFrame:
+    """Pull game logs across multiple seasons and concatenate."""
+    frames = []
+    for season in seasons:
+        try:
+            df = get_player_game_log(player_id, season, season_type)
+            if not df.empty:
+                df["SEASON"] = season
+                frames.append(df)
+        except Exception:
+            continue
+    if frames:
+        return pd.concat(frames, ignore_index=True)
+    return pd.DataFrame()
+
+
+# ---------------------------------------------------------------------------
+# Advanced / estimated metrics
+# ---------------------------------------------------------------------------
+
+def get_player_estimated_metrics(
+    player_id: int, season: str
+) -> pd.DataFrame:
+    """
+    Return estimated advanced metrics for a player-season.
+
+    Includes offensive/defensive rating, net rating, usage, pace, etc.
+    """
+    _delay()
+    response = playerestimatedmetrics.PlayerEstimatedMetrics(season=season)
+    df = response.get_data_frames()[0]
+    return df[df["PLAYER_ID"] == player_id]
+
+
+def get_player_year_over_year(player_id: int) -> pd.DataFrame:
+    """Return year-over-year dashboard splits for a player."""
+    _delay()
+    response = playerdashboardbyyearoveryear.PlayerDashboardByYearOverYear(
+        player_id=player_id
+    )
+    return response.get_data_frames()[1]  # ByYearPlayerDashboard
+
+
+def get_player_shooting_splits(
+    player_id: int, season: str = "2024-25"
+) -> pd.DataFrame:
+    """Return shooting splits by distance, area, and assisted/unassisted."""
+    _delay()
+    response = playerdashboardbyshootingsplits.PlayerDashboardByShootingSplits(
+        player_id=player_id, season=season
+    )
+    # Index 1 = ByDistancePlayerDashboard
+    return response.get_data_frames()[1]
+
+
+# ---------------------------------------------------------------------------
+# League-wide stats
+# ---------------------------------------------------------------------------
+
+def get_league_player_stats(
+    season: str, season_type: str = "Regular Season",
+    per_mode: str = "PerGame",
+) -> pd.DataFrame:
+    """
+    Return league-wide player stats for a season.
+
+    per_mode: 'Totals', 'PerGame', 'Per36', 'Per48'.
+    """
+    _delay()
+    response = leaguedashplayerstats.LeagueDashPlayerStats(
+        season=season,
+        season_type_all_star=season_type,
+        per_mode_detailed=per_mode,
+    )
+    return response.get_data_frames()[0]
+
+
+def get_league_leaders(
+    season: str, stat_category: str = "PTS",
+    per_mode: str = "PerGame",
+) -> pd.DataFrame:
+    """
+    Return league leaders for a stat category.
+
+    stat_category: 'PTS', 'REB', 'AST', 'STL', 'BLK', 'EFF', 'FG_PCT', etc.
+    """
+    _delay()
+    response = leagueleaders.LeagueLeaders(
+        season=season,
+        stat_category_abbreviation=stat_category,
+        per_mode48=per_mode,
+    )
+    return response.get_data_frames()[0]
+
+
+def get_league_bio_stats(season: str) -> pd.DataFrame:
+    """Return player bio stats (height, weight, age, draft, country)."""
+    _delay()
+    response = leaguedashplayerbiostats.LeagueDashPlayerBioStats(season=season)
+    return response.get_data_frames()[0]
+
+
+# ---------------------------------------------------------------------------
+# Team stats
+# ---------------------------------------------------------------------------
+
+def get_team_stats(
+    season: str, season_type: str = "Regular Season",
+    per_mode: str = "PerGame",
+) -> pd.DataFrame:
+    """Return team-level stats for a season."""
+    _delay()
+    response = leaguedashteamstats.LeagueDashTeamStats(
+        season=season,
+        season_type_all_star=season_type,
+        per_mode_detailed=per_mode,
+    )
+    return response.get_data_frames()[0]
+
+
+def get_team_game_log(
+    team_id: int, season: str, season_type: str = "Regular Season"
+) -> pd.DataFrame:
+    """Return game-by-game results for a team in a given season."""
+    _delay()
+    response = teamgamelog.TeamGameLog(
+        team_id=team_id, season=season, season_type_all_star=season_type
+    )
+    return response.get_data_frames()[0]
+
+
+# ---------------------------------------------------------------------------
+# Head-to-head player comparison (NBA's own comparison endpoint)
+# ---------------------------------------------------------------------------
+
+def get_player_comparison(
+    player1_id: int, player2_id: int, season: str = "2024-25"
+) -> dict[str, pd.DataFrame]:
+    """
+    Use the NBA's PlayerCompare endpoint to get head-to-head stats.
+
+    Returns dict with 'individual' and 'overall' DataFrames.
+    """
+    _delay()
+    response = playercompare.PlayerCompare(
+        player_id_list=str(player1_id),
+        vs_player_id_list=str(player2_id),
+        season=season,
+    )
+    frames = response.get_data_frames()
+    return {
+        "overall": frames[0],   # OverallCompare
+        "individual": frames[1] if len(frames) > 1 else pd.DataFrame(),
+    }
 
 
 # ---------------------------------------------------------------------------

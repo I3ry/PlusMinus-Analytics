@@ -201,3 +201,162 @@ def export_cleaned(df: pd.DataFrame, filename: str) -> Path:
     path = CLEANED_DIR / filename
     df.to_csv(path, index=False)
     return path
+
+
+# ---------------------------------------------------------------------------
+# Game log cleaning
+# ---------------------------------------------------------------------------
+
+def clean_game_logs(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Clean player game logs for analysis.
+
+    Parses dates, computes game score, adds rolling averages, and
+    classifies era.
+    """
+    df = df.copy()
+
+    # Parse game date
+    if "GAME_DATE" in df.columns:
+        df["GAME_DATE"] = pd.to_datetime(df["GAME_DATE"], errors="coerce")
+        df["YEAR"] = df["GAME_DATE"].dt.year
+        df["MONTH"] = df["GAME_DATE"].dt.month
+
+    # Ensure numeric stat columns
+    stat_cols = [
+        "PTS", "REB", "AST", "STL", "BLK", "TOV",
+        "FGM", "FGA", "FG_PCT", "FG3M", "FG3A", "FG3_PCT",
+        "FTM", "FTA", "FT_PCT", "MIN", "PLUS_MINUS",
+    ]
+    for col in stat_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    # Game Score (John Hollinger formula)
+    if all(c in df.columns for c in ["PTS", "FGM", "FGA", "FTM", "FTA",
+                                      "REB", "AST", "STL", "BLK", "TOV"]):
+        # Approximate OREB/DREB split if not available
+        oreb = df.get("OREB", 0)
+        dreb = df.get("DREB", 0)
+        df["GAME_SCORE"] = (
+            df["PTS"]
+            + 0.4 * df["FGM"]
+            - 0.7 * df["FGA"]
+            - 0.4 * (df["FTA"] - df["FTM"])
+            + 0.7 * oreb
+            + 0.3 * dreb
+            + df["STL"]
+            + 0.7 * df["AST"]
+            + 0.7 * df["BLK"]
+            - 0.4 * df.get("PF", 0)
+            - df["TOV"]
+        ).round(1)
+
+    # Rolling averages (10-game window) per player
+    if "PLAYER_NAME_LABEL" in df.columns:
+        df = df.sort_values(["PLAYER_NAME_LABEL", "GAME_DATE"])
+        for col in ["PTS", "AST", "REB", "GAME_SCORE"]:
+            if col in df.columns:
+                df[f"{col}_ROLL10"] = (
+                    df.groupby("PLAYER_NAME_LABEL")[col]
+                    .transform(lambda x: x.rolling(10, min_periods=1).mean())
+                    .round(1)
+                )
+
+    return df
+
+
+# ---------------------------------------------------------------------------
+# League stats cleaning
+# ---------------------------------------------------------------------------
+
+def clean_league_stats(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Clean league-wide player stats.
+
+    Computes true shooting %, effective FG%, and usage estimate.
+    """
+    df = df.copy()
+
+    numeric_cols = [
+        "GP", "MIN", "PTS", "FGM", "FGA", "FG_PCT",
+        "FG3M", "FG3A", "FG3_PCT", "FTM", "FTA", "FT_PCT",
+        "REB", "AST", "STL", "BLK", "TOV", "PLUS_MINUS",
+    ]
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    # True Shooting %
+    if all(c in df.columns for c in ["PTS", "FGA", "FTA"]):
+        tsa = 2 * (df["FGA"] + 0.44 * df["FTA"])
+        df["TS_PCT"] = np.where(tsa > 0, (df["PTS"] / tsa).round(4), np.nan)
+
+    # Effective FG%
+    if all(c in df.columns for c in ["FGM", "FG3M", "FGA"]):
+        df["EFG_PCT"] = np.where(
+            df["FGA"] > 0,
+            ((df["FGM"] + 0.5 * df["FG3M"]) / df["FGA"]).round(4),
+            np.nan,
+        )
+
+    # 3-point attempt rate
+    if all(c in df.columns for c in ["FG3A", "FGA"]):
+        df["THREE_RATE"] = np.where(
+            df["FGA"] > 0,
+            (df["FG3A"] / df["FGA"]).round(4),
+            np.nan,
+        )
+
+    # Assist-to-turnover ratio
+    if all(c in df.columns for c in ["AST", "TOV"]):
+        df["AST_TOV"] = np.where(
+            df["TOV"] > 0,
+            (df["AST"] / df["TOV"]).round(2),
+            np.nan,
+        )
+
+    return df
+
+
+# ---------------------------------------------------------------------------
+# Year-over-year cleaning
+# ---------------------------------------------------------------------------
+
+def clean_year_over_year(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean year-over-year splits — add advanced efficiency metrics."""
+    df = df.copy()
+    df = clean_league_stats(df)  # reuse the same efficiency calcs
+    return df
+
+
+# ---------------------------------------------------------------------------
+# Team stats cleaning
+# ---------------------------------------------------------------------------
+
+def clean_team_stats(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean team-level stats and add pace/efficiency context."""
+    df = df.copy()
+
+    numeric_cols = [
+        "GP", "W", "L", "W_PCT", "MIN", "PTS", "FGM", "FGA",
+        "FG_PCT", "FG3M", "FG3A", "FG3_PCT", "FTM", "FTA", "FT_PCT",
+        "REB", "AST", "STL", "BLK", "TOV", "PLUS_MINUS",
+    ]
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    # Offensive rating proxy (points per 100 possessions estimate)
+    if all(c in df.columns for c in ["PTS", "FGA", "FTA", "TOV"]):
+        poss_est = df["FGA"] + 0.44 * df["FTA"] + df["TOV"]
+        df["OFF_RTG_EST"] = np.where(
+            poss_est > 0, (df["PTS"] / poss_est * 100).round(1), np.nan
+        )
+
+    if all(c in df.columns for c in ["FG3A", "FGA"]):
+        df["THREE_RATE"] = np.where(
+            df["FGA"] > 0, (df["FG3A"] / df["FGA"]).round(4), np.nan
+        )
+
+    return df
