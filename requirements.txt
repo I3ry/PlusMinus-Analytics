@@ -6,3 +6,4 @@ seaborn>=0.12
 jupyter>=1.0
 streamlit>=1.30
 plotly>=5.18
+pyarrow>=14.0

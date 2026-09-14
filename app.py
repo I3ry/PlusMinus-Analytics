@@ -14,6 +14,13 @@ from pathlib import Path
 
 EXPORTS = Path(__file__).parent / "data" / "exports"
 
+if not EXPORTS.exists():
+    import sys
+    sys.exit(
+        f"ERROR: Data directory not found at {EXPORTS}. "
+        "Run 'python -m src.batch_collect && python -m src.batch_clean' first."
+    )
+
 st.set_page_config(
     page_title="NBA Player Efficiency Analysis",
     page_icon="🏀",
@@ -176,7 +183,7 @@ def page_shot_chart():
         margin=dict(l=20, r=20, t=40, b=20),
         title=f"{player} — Shot Chart",
     )
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
 
     # Zone breakdown
     st.subheader("Shooting by Zone")
@@ -190,7 +197,7 @@ def page_shot_chart():
         )
         fig_zone.update_traces(texttemplate="%{text:.1%}", textposition="outside")
         fig_zone.update_layout(height=350, xaxis_title="", yaxis_title="Field Goal Attempts")
-        st.plotly_chart(fig_zone, width="stretch")
+        st.plotly_chart(fig_zone, use_container_width=True)
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +242,7 @@ def page_heatmap():
         margin=dict(l=20, r=20, t=40, b=20),
         title=f"{player} — Efficiency Heatmap (bubble size = volume)",
     )
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
 
     st.caption("Green = high efficiency, Red = low efficiency. Bubble size represents shot volume. Zones with fewer than 3 attempts are hidden.")
 
@@ -274,7 +281,7 @@ def page_comparison():
     fig.update_xaxes(range=[-250, 250], showgrid=False, zeroline=False, showticklabels=False)
     fig.update_yaxes(range=[-50, 420], showgrid=False, zeroline=False, showticklabels=False, scaleanchor="x")
     fig.update_layout(height=500, plot_bgcolor="white", margin=dict(l=20, r=20, t=60, b=20))
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
 
     # Stats comparison table
     st.subheader("Stats Comparison")
@@ -290,7 +297,7 @@ def page_comparison():
         }
 
     stats_df = pd.DataFrame([player_stats(df1, p1), player_stats(df2, p2)])
-    st.dataframe(stats_df.set_index("Player"), width="stretch")
+    st.dataframe(stats_df.set_index("Player"), use_container_width=True)
 
     # Zone comparison
     st.subheader("Zone Efficiency Comparison")
@@ -309,7 +316,7 @@ def page_comparison():
         )
         fig_z.update_traces(texttemplate="%{text:.1%}", textposition="outside")
         fig_z.update_layout(height=400, yaxis_title="FG%", xaxis_title="")
-        st.plotly_chart(fig_z, width="stretch")
+        st.plotly_chart(fig_z, use_container_width=True)
 
 
 # ---------------------------------------------------------------------------
@@ -365,7 +372,7 @@ def page_game_logs():
         title=f"{player} — {stat} Over Time",
         hovermode="x unified",
     )
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
 
     # Season averages
     st.subheader("Season Averages")
@@ -379,7 +386,7 @@ def page_game_logs():
             PLUS_MINUS=("PLUS_MINUS", "mean"),
         ).round(1).reset_index()
         season_avg.columns = ["Season", "GP", "PPG", "APG", "RPG", "FG%", "+/-"]
-        st.dataframe(season_avg, width="stretch", hide_index=True)
+        st.dataframe(season_avg, use_container_width=True, hide_index=True)
 
 
 # ---------------------------------------------------------------------------
@@ -412,7 +419,7 @@ def page_era_analysis():
         fig.update_traces(texttemplate="%{text:.1%}", textposition="outside")
         fig.update_layout(height=400, xaxis_title="", yaxis_title="FG%", title="Field Goal % by Era",
                           showlegend=False)
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
 
     with col2:
         fig = px.bar(
@@ -422,7 +429,7 @@ def page_era_analysis():
         fig.update_traces(texttemplate="%{text:.1f} ft", textposition="outside")
         fig.update_layout(height=400, xaxis_title="", yaxis_title="Avg Shot Distance (ft)",
                           title="Average Shot Distance by Era", showlegend=False)
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
 
     # Per-player era breakdown
     st.subheader("Player Efficiency Across Eras")
@@ -440,14 +447,14 @@ def page_era_analysis():
         fig.update_traces(texttemplate="%{text:.1%}", textposition="outside")
         fig.update_layout(height=450, xaxis_title="", yaxis_title="FG%",
                           legend_title="Player")
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
 
         # Volume table
         st.subheader("Shot Volume by Era")
         pivot = filtered.pivot_table(index="PLAYER_NAME_LABEL", columns="ERA",
                                      values="FGA", aggfunc="sum").fillna(0).astype(int)
         pivot = pivot.reindex(columns=[e for e in era_order if e in pivot.columns])
-        st.dataframe(pivot, width="stretch")
+        st.dataframe(pivot, use_container_width=True)
 
 
 # ---------------------------------------------------------------------------
@@ -475,7 +482,7 @@ def page_career_stats():
         display = df[["GROUP_VALUE"] + available].copy()
         display = display.rename(columns={"GROUP_VALUE": "Season"})
         display = display.round(1)
-        st.dataframe(display, width="stretch", hide_index=True)
+        st.dataframe(display, use_container_width=True, hide_index=True)
 
     # Career trajectory chart
     st.subheader("Career Trajectory")
@@ -491,7 +498,7 @@ def page_career_stats():
             height=400, xaxis_title="Season", yaxis_title=stat,
             title=f"{player} — {stat} by Season",
         )
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
 
     # Advanced metrics
     if any(c in df.columns for c in ["TS_PCT", "EFG_PCT", "THREE_RATE"]):
@@ -501,7 +508,7 @@ def page_career_stats():
             adv = df[["GROUP_VALUE"] + adv_cols].melt(id_vars="GROUP_VALUE", var_name="Metric", value_name="Value")
             fig = px.line(adv, x="GROUP_VALUE", y="Value", color="Metric", markers=True)
             fig.update_layout(height=400, xaxis_title="Season", yaxis_title="Value")
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
 
 
 # ---------------------------------------------------------------------------
@@ -531,7 +538,7 @@ def page_league():
     if "PTS" in df.columns:
         top = df.nlargest(15, "PTS")[["PLAYER_NAME", "TEAM_ABBREVIATION", "GP", "PTS", "AST", "REB", "FG_PCT", "FG3_PCT"]].copy()
         top = top.round(1)
-        st.dataframe(top, width="stretch", hide_index=True)
+        st.dataframe(top, use_container_width=True, hide_index=True)
 
     # Scoring distribution
     if "PTS" in df.columns:
@@ -540,7 +547,7 @@ def page_league():
                            labels={"PTS": "Points Per Game"},
                            title=f"PPG Distribution (min 20 GP) — {season}")
         fig.update_layout(height=350)
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
 
     # Team stats
     st.subheader(f"Team Stats — {season}")
@@ -553,7 +560,7 @@ def page_league():
         display_cols = ["TEAM_NAME", "W", "L", "W_PCT", "PTS", "FG_PCT", "FG3_PCT", "REB", "AST"]
         available = [c for c in display_cols if c in ts.columns]
         st.dataframe(ts[available].sort_values("W_PCT", ascending=False).round(3),
-                     width="stretch", hide_index=True)
+                     use_container_width=True, hide_index=True)
 
     # 3PT evolution across seasons
     if "SEASON" in team_stats.columns and "FG3A" in team_stats.columns and "FGA" in team_stats.columns:
@@ -568,7 +575,7 @@ def page_league():
                       text="THREE_RATE", title="Average Team 3-Point Attempt Rate by Season")
         fig.update_traces(texttemplate="%{text:.1f}%", textposition="top center")
         fig.update_layout(height=400, xaxis_title="Season", yaxis_title="3PA as % of FGA")
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
 
 
 # ---------------------------------------------------------------------------
