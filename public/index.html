@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Player Efficiency Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav id="sidebar">
+    <h2>🏀 NBA Player<br>Efficiency</h2>
+    <hr>
+    <button class="nav-btn active" data-page="shot-chart">🏀 Shot Chart</button>
+    <button class="nav-btn" data-page="heatmap">🔥 Heatmap</button>
+    <button class="nav-btn" data-page="comparison">⚔️ Comparison</button>
+    <button class="nav-btn" data-page="game-logs">📈 Game Logs</button>
+    <button class="nav-btn" data-page="career">📊 Career Stats</button>
+    <button class="nav-btn" data-page="era">🕰️ Era Analysis</button>
+    <button class="nav-btn" data-page="league">🏆 League</button>
+    <hr>
+    <div class="sidebar-info">
+        <strong>Data</strong>: nba_api (1996–2025)<br>
+        <strong>Players</strong>: 10 across eras<br>
+        <strong>Shots</strong>: 79,763 records<br>
+        <strong>Games</strong>: 8,076 game logs
+    </div>
+</nav>
+
+<main id="content">
+    <div id="loading" class="loading">Loading data...</div>
+
+    <!-- Shot Chart Page -->
+    <section id="page-shot-chart" class="page active">
+        <h1>Shot Chart Explorer</h1>
+        <div class="controls">
+            <label>Player: <select id="sc-player"></select></label>
+            <label>Filter: <select id="sc-filter">
+                <option value="all">All Shots</option>
+                <option value="made">Made Only</option>
+                <option value="missed">Missed Only</option>
+            </select></label>
+        </div>
+        <div class="metrics" id="sc-metrics"></div>
+        <div id="sc-chart" class="chart"></div>
+        <h2>Shooting by Zone</h2>
+        <div id="sc-zones" class="chart"></div>
+    </section>
+
+    <!-- Heatmap Page -->
+    <section id="page-heatmap" class="page">
+        <h1>Shooting Efficiency Heatmap</h1>
+        <div class="controls">
+            <label>Player: <select id="hm-player"></select></label>
+        </div>
+        <div id="hm-chart" class="chart"></div>
+        <p class="caption">Green = high efficiency, Red = low efficiency. Bubble size = shot volume. Min 3 attempts.</p>
+    </section>
+
+    <!-- Comparison Page -->
+    <section id="page-comparison" class="page">
+        <h1>Player Comparison</h1>
+        <div class="controls">
+            <label>Player 1: <select id="cmp-p1"></select></label>
+            <label>Player 2: <select id="cmp-p2"></select></label>
+            <button id="cmp-go" class="btn">Compare</button>
+        </div>
+        <div id="cmp-charts" class="chart"></div>
+        <h2>Stats Comparison</h2>
+        <div id="cmp-table"></div>
+        <h2>Zone Efficiency</h2>
+        <div id="cmp-zones" class="chart"></div>
+    </section>
+
+    <!-- Game Logs Page -->
+    <section id="page-game-logs" class="page">
+        <h1>Game Log Trends</h1>
+        <div class="controls">
+            <label>Player: <select id="gl-player"></select></label>
+            <label>Stat: <select id="gl-stat">
+                <option value="PTS">Points</option>
+                <option value="AST">Assists</option>
+                <option value="REB">Rebounds</option>
+                <option value="GAME_SCORE">Game Score</option>
+                <option value="FG_PCT">FG%</option>
+                <option value="PLUS_MINUS">+/-</option>
+            </select></label>
+        </div>
+        <div class="metrics" id="gl-metrics"></div>
+        <div id="gl-chart" class="chart"></div>
+        <h2>Season Averages</h2>
+        <div id="gl-table"></div>
+    </section>
+
+    <!-- Career Stats Page -->
+    <section id="page-career" class="page">
+        <h1>Career Season Stats</h1>
+        <div class="controls">
+            <label>Player: <select id="cs-player"></select></label>
+            <label>Stat: <select id="cs-stat">
+                <option value="PTS">Points</option>
+                <option value="AST">Assists</option>
+                <option value="REB">Rebounds</option>
+                <option value="FG_PCT">FG%</option>
+                <option value="FG3_PCT">3PT%</option>
+                <option value="TS_PCT">True Shooting%</option>
+                <option value="EFG_PCT">eFG%</option>
+            </select></label>
+        </div>
+        <div id="cs-chart" class="chart"></div>
+        <h2>Season-by-Season</h2>
+        <div id="cs-table"></div>
+        <h2>Advanced Efficiency</h2>
+        <div id="cs-advanced" class="chart"></div>
+    </section>
+
+    <!-- Era Analysis Page -->
+    <section id="page-era" class="page">
+        <h1>Era Analysis — How Shooting Has Evolved</h1>
+        <div class="chart-row">
+            <div id="era-fg" class="chart half"></div>
+            <div id="era-dist" class="chart half"></div>
+        </div>
+        <h2>Player Efficiency Across Eras</h2>
+        <div class="controls">
+            <label>Players: <select id="era-players" multiple></select></label>
+        </div>
+        <div id="era-players-chart" class="chart"></div>
+    </section>
+
+    <!-- League Overview Page -->
+    <section id="page-league" class="page">
+        <h1>League Overview</h1>
+        <div class="controls">
+            <label>Season: <select id="lg-season"></select></label>
+        </div>
+        <h2>Top 15 Scorers</h2>
+        <div id="lg-table"></div>
+        <h2>Scoring Distribution</h2>
+        <div id="lg-hist" class="chart"></div>
+        <h2>Team Stats</h2>
+        <div id="lg-teams"></div>
+        <h2>3-Point Revolution</h2>
+        <div id="lg-three" class="chart"></div>
+    </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
