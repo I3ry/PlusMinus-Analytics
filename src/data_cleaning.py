@@ -23,7 +23,7 @@ COURT_LENGTH = 470       # 0 to ~470 (47 ft from baseline to half-court)
 # ---------------------------------------------------------------------------
 
 ERA_BINS = {
-    "Pre-Three-Point": (1996, 1999),
+    "Mid 1990s": (1996, 1999),
     "Early 2000s": (2000, 2004),
     "Mid 2000s": (2005, 2009),
     "Early 2010s": (2010, 2014),
@@ -112,6 +112,7 @@ def aggregate_by_zone(df: pd.DataFrame) -> pd.DataFrame:
     Aggregate shooting stats by SHOT_ZONE_BASIC and SHOT_ZONE_AREA.
 
     Returns a DataFrame with attempts, makes, and FG% per zone.
+    Rows with missing zone data are preserved with NaN labels to preserve shot totals.
     """
     if "SHOT_ZONE_BASIC" not in df.columns:
         raise ValueError("DataFrame missing SHOT_ZONE_BASIC column")
@@ -120,7 +121,7 @@ def aggregate_by_zone(df: pd.DataFrame) -> pd.DataFrame:
     group_cols = [c for c in group_cols if c in df.columns]
 
     agg = (
-        df.groupby(group_cols)
+        df.groupby(group_cols, dropna=False)
         .agg(
             FGA=("SHOT_MADE_FLAG", "count"),
             FGM=("SHOT_MADE_FLAG", "sum"),
