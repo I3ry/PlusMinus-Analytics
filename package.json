@@ -1,0 +1,11 @@
+{
+  "name": "plusminus-portfolio",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "seed": "node scripts/seed.mjs",
+    "test": "node --test tests/prototype.test.mjs",
+    "package": "node scripts/package.mjs"
+  },
+  "engines": { "node": ">=20" }
+}

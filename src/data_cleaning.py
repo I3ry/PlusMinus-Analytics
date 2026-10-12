@@ -72,25 +72,24 @@ def clean_shot_chart(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    # Classify era
-    if "GAME_DATE" in df.columns:
-        df["SEASON_START_YEAR"] = df["GAME_DATE"].astype(str).str[:4].astype(int)
-    if "SEASON_START_YEAR" in df.columns:
-        # Approximate season string from year; not perfect but functional
-        df["ERA"] = df.get("SEASON_ID", df.get("HTM", pd.Series(dtype=str)))
-    # If we have a proper season column, use it
-    for candidate in ["SEASON_ID", "SEASON"]:
+    # Prefer explicit season metadata. Never substitute a team for an era.
+    years = pd.Series(pd.NA, index=df.index, dtype="Int64")
+    for candidate in ["SEASON_ID", "SEASON", "SEASON_STR"]:
         if candidate in df.columns:
-            # SEASON_ID often looks like "22023" — strip leading digit
-            raw = df[candidate].astype(str)
-            if raw.str.len().max() > 5:
-                raw = raw.str[1:]  # e.g. "22023" -> "2023"
-            # Build proper season string
-            df["SEASON_STR"] = raw.str[:4] + "-" + (
-                (raw.str[:4].astype(int) + 1) % 100
-            ).astype(str).str.zfill(2)
-            df["ERA"] = df["SEASON_STR"].apply(classify_era)
-            break
+            raw = df[candidate].astype(str).str.replace(r"\.0$", "", regex=True)
+            raw = raw.str.replace(r"^[1245](\d{4})$", r"\1", regex=True)
+            parsed = pd.to_numeric(raw.str.extract(r"^((?:19|20)\d{2})(?:-\d{2})?$", expand=False), errors="coerce").astype("Int64")
+            years = years.fillna(parsed)
+    if "GAME_DATE" in df.columns:
+        dates = pd.to_datetime(df["GAME_DATE"].astype(str), format="mixed", errors="coerce")
+        # July boundary handles ordinary NBA seasons and the Dec 2020 start;
+        # bubble games in Jul-Oct 2020 belong to the 2019 season.
+        inferred = (dates.dt.year - (dates.dt.month < 7).astype(int)).astype("Int64")
+        inferred = inferred.mask(dates.between("2020-07-01", "2020-10-31"), 2019)
+        years = years.fillna(inferred)
+    df["SEASON_START_YEAR"] = years
+    df["SEASON_STR"] = years.astype(str) + "-" + ((years + 1) % 100).astype(str).str.zfill(2)
+    df["ERA"] = df["SEASON_STR"].apply(classify_era)
 
     # Human-readable result
     if "SHOT_MADE_FLAG" in df.columns:

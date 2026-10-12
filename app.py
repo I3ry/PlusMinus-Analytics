@@ -400,10 +400,10 @@ def page_era_analysis():
     player_era = load_player_era()
 
     # Overall era trends
-    st.subheader("League-Wide Shooting Trends by Era")
+    st.subheader("Selected-Player Shooting Trends by Era")
 
     era_order = [
-        "Pre-Three-Point", "Early 2000s", "Mid 2000s",
+        "Mid 1990s", "Early 2000s", "Mid 2000s",
         "Early 2010s", "Three-Point Revolution", "Modern Era",
     ]
     era_trends["ERA"] = pd.Categorical(era_trends["ERA"], categories=era_order, ordered=True)

@@ -29,7 +29,7 @@ async function loadCSV(filename) {
 function parseCSV(text) {
     const lines = text.split('\n');
     if (lines.length < 2) return [];
-    const headers = parseCSVLine(lines[0]);
+    const headers = parseCSVLine(lines[0].replace(/\r$/, ''));
     const rows = [];
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -490,7 +490,7 @@ async function renderEraAnalysis() {
     const eraTrends = await loadCSV('era_shooting_trends');
     const playerEra = await loadCSV('player_era_breakdown');
 
-    const eraOrder = ['Pre-Three-Point', 'Early 2000s', 'Mid 2000s', 'Early 2010s', 'Three-Point Revolution', 'Modern Era'];
+    const eraOrder = ['Mid 1990s', 'Early 2000s', 'Mid 2000s', 'Early 2010s', 'Three-Point Revolution', 'Modern Era'];
     const sorted = eraOrder.filter(e => eraTrends.some(r => r.ERA === e));
 
     // FG% by era
@@ -650,6 +650,10 @@ async function renderCurrentPage(page) {
         rendered.add(page);
     } catch (err) {
         console.error(`Error rendering ${page}:`, err);
+        const notice = document.createElement('p');
+        notice.setAttribute('role', 'alert');
+        notice.textContent = 'Unable to load this view. Check your connection (charts require Plotly), then reload to retry.';
+        document.getElementById('page-' + page).prepend(notice);
     }
     loading.classList.remove('visible');
 }

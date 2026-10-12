@@ -1,114 +1,78 @@
-# PlusMinus Analytics — NBA Player Efficiency Analysis
+# PlusMinus Analytics
 
-An interactive dashboard for comparing NBA player shooting efficiency across eras, teams, and court locations using visual heatmaps and statistical analysis.
+A basketball analytics portfolio connecting shot-level evidence to a clear next step. Includes a historical NBA explorer, a separate training-product prototype, and a complete product case study.
 
-## Problem
+**Status:** runnable static prototype; synthetic training data; rules-based recommendations. No live AI inference, computer vision, authenticated backend, or measured business outcomes. A production URL has not yet been recorded here.
 
-Comparing NBA players across different eras is difficult due to rule changes, pace differences, and evolving play styles. Traditional box-score statistics don't capture spatial shooting patterns.
+## Run the portfolio
 
-## Solution
+With Node 20+ installed, no dependency installation is needed:
 
-A data pipeline that pulls shot chart data from the NBA API, processes it into analysis-ready formats, and feeds a Tableau dashboard with heatmaps, player comparisons, and era analysis.
+```sh
+node scripts/package.mjs
+node scripts/serve.mjs
+```
 
-## Tech Stack
+Open **http://127.0.0.1:4173**. The homepage links to both experiences and the documents. Do not open the HTML through `file://`; data loading uses HTTP fetch.
 
-| Component | Technology | Purpose |
+| Experience | Entry point | Evidence |
 |---|---|---|
-| Data Source | `nba_api` (Python) | Shot charts, player stats, team data |
-| Processing | Pandas, NumPy | Clean, transform, aggregate |
-| Visualization | Tableau | Interactive dashboards, heatmaps |
-| Exploration | Jupyter, Matplotlib, Seaborn | Prototyping and validation |
+| Portfolio and case study | `public/index.html` | Problem, tradeoffs, capabilities and recruiter reading room |
+| Training Lab | `public/prototype/index.html` | Three dashboards, 15 charts, seven mock entities, five simulated API contracts |
+| NBA explorer | `public/explorer.html` | Seven views over exported historical NBA data; requires Plotly CDN |
+| Streamlit alternative | `app.py` | Python implementation of NBA analytics |
 
-## Project Structure
+## Read the case study
 
-```
-PlusMinus-Analytics/
-├── data/
-│   ├── raw/            # Raw API responses (git-ignored)
-│   ├── cleaned/        # Processed data (git-ignored)
-│   └── exports/        # Tableau-ready CSVs
-├── src/
-│   ├── __init__.py
-│   ├── data_collection.py   # NBA API data retrieval
-│   ├── data_cleaning.py     # Cleaning & transformation
-│   └── verify_connection.py # API connectivity check
-├── notebooks/
-│   └── 01_exploration.ipynb # Interactive exploration
-├── tableau/            # Tableau workbooks
-├── docs/               # Documentation
-├── requirements.txt
-├── .gitignore
-└── README.md
-```
+- [Focused next-release MVP and implementation PRD](docs/recruiter/MVP_PRD.md)
+- [Case study and architecture diagrams](docs/recruiter/CASE_STUDY.md)
+- [PRD, feature blueprint and UX flows](docs/recruiter/PRODUCT_SPEC.md)
+- [Six-month roadmap, competitors, KPI framework and GTM](docs/recruiter/STRATEGY.md)
+- [Data model, five API contracts and chart inventory](docs/recruiter/DATA_API.md)
+- [Recruiter demo script, deployment guide and résumé bullets](docs/recruiter/LAUNCH_KIT.md)
+- [Original gaps and claim-to-evidence audit](docs/recruiter/AUDIT.md)
+- [Verification results](docs/recruiter/VERIFICATION.md)
 
-## Quick Start
+## Technical structure
 
-1. **Create and activate a virtual environment**:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Verify the API connection**:
-   ```bash
-   python -m src.verify_connection
-   ```
-
-4. **Explore in Jupyter**:
-   ```bash
-   jupyter notebook notebooks/01_exploration.ipynb
-   ```
-
-## Usage
-
-### Collect data for a player
-
-```python
-from src.data_collection import collect_player_data, season_range
-
-data = collect_player_data("Stephen Curry", seasons=season_range(2015, 2023))
-# Saves CSVs to data/raw/ automatically
+```text
+public/                  Static deployable artifact
+  index.html             Recruiter entry point
+  explorer.html          Existing NBA explorer
+  data/                  Historical NBA exports
+  prototype/             Training UI, model, and seven-entity JSON fixture
+  deliverables/          Packaged recruiter documents
+src/                     NBA collection, cleaning and export pipeline
+scripts/                 Static server, seed generator, packaging, era repair
+tests/                   Mock API/data tests and era regressions
+docs/recruiter/          Source product/case-study deliverables and SQL schema
+app.py                   Streamlit alternative
 ```
 
-### Clean and export for Tableau
+The training prototype executes API-like method/path contracts in browser memory; it does not host `/api` HTTP endpoints. Downloaded plans are transient outputs, not persisted writes. Ratings are descriptive shooting percentages, not validated skill measurements.
 
-```python
-from src.data_cleaning import clean_shot_chart, aggregate_by_grid, export_for_tableau
+## Validate
 
-cleaned = clean_shot_chart(data["shot_chart"])
-grid = aggregate_by_grid(cleaned, bin_size=25)
-export_for_tableau(grid, "curry_grid.csv")
+```sh
+node --test tests/prototype.test.mjs
+python -m unittest discover -s tests -p test_eras.py
 ```
 
-### Compare two players
+Python tests require Pandas and NumPy. The seeded mock fixture can be regenerated with `node scripts/seed.mjs`. The era repair runs offline with `python -m scripts.repair_eras`, preserving non-era shot fields and rebuilding era aggregates in both export directories.
 
-```python
-from src.data_cleaning import prepare_comparison, export_for_tableau
+## Deploy
 
-combined = prepare_comparison(cleaned_player1, cleaned_player2, "Curry", "Jordan")
-export_for_tableau(combined, "curry_vs_jordan.csv")
+Publish the full **public/** folder on a static host. Existing `vercel.json` declares that output directory. See the [launch kit](docs/recruiter/LAUNCH_KIT.md) for exact settings and signed-out smoke checks. Run the packaging script after documentation edits. No API keys or database configuration are required for this prototype. Files here are local until committed/pushed; publishing is a separate step.
+
+## NBA pipeline and alternative app
+
+```sh
+python -m venv .venv
+# Activate .venv using your shell, then:
+pip install -r requirements.txt
+streamlit run app.py
 ```
 
-## Key Data Fields
+Existing scripts under `src/` collect NBA data through `nba_api`, clean and aggregate shot locations, and export CSVs. Live collection depends on NBA API availability; the portfolio uses committed exports and does not need collection to run. The master export has 79,763 shots from ten selected players with observed game dates in 1996–2026. It is not a complete league dataset. Historical era comparisons are descriptive and not adjusted for pace, rules or opponent quality.
 
-| Field | Description |
-|---|---|
-| `LOC_X`, `LOC_Y` | Shot coordinates (tenths of feet from basket) |
-| `SHOT_MADE_FLAG` | 1 = made, 0 = missed |
-| `SHOT_ZONE_BASIC` | Court region (Restricted Area, Mid-Range, etc.) |
-| `SHOT_ZONE_AREA` | Left / Center / Right positioning |
-| `SHOT_DISTANCE` | Distance from basket in feet |
-| `GAME_DATE` | Date of game (for era analysis) |
-
-## Data Availability
-
-Shot chart data is available from the 1996-97 season onward via the NBA API.
-
-## Rate Limiting
-
-The data collection module includes a 0.6-second delay between API calls to respect NBA.com rate limits. Data is cached locally as CSV files to avoid redundant requests.
+Independent portfolio project developed with AI coding assistance. No affiliation with the NBA. Data rights should be reviewed before commercial redistribution. No user research, revenue or recruiter-engagement uplift is claimed.
